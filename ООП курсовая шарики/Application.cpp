@@ -1,6 +1,11 @@
 #include <iostream>
 #include <string>
 #include "Application.h"
+#include "Node2.h"
+#include "Node3.h"
+#include "Node4.h"
+#include "Node5.h"
+#include "Node6.h"
 using namespace std;
 
 Application::Application(Base* head_object, string name) : Base(head_object, name)
@@ -13,68 +18,57 @@ void Application::build_tree_objects()
 	cin >> root_name;
 	this->change_name(root_name);
 	string parent_name, child_name;
-	cin >> parent_name >> child_name;
-	Base* current_layer_parent = this;
-	Base* last_created_child = nullptr;
-	while (parent_name != child_name) {
-		if (parent_name == current_layer_parent->get_name()) {
-			Base* new_child = new Base(current_layer_parent, child_name);
-			if (new_child->get_name() == child_name) {		//Проверка, что дочерний объект создан корректно и привязан к дереву
-				last_created_child = new_child;
+	int class_index;
+	cin >> parent_name;
+	while (parent_name != "endtree") {
+		cin >> child_name >> class_index;
+		Base* parent = search_tree(parent_name);
+		if (parent != nullptr) {
+			bool is_valid = true;
+			//Проверка на уникальность объекта в дереве
+			if (search_tree(child_name) != nullptr) {
+				is_valid = false;
 			}
-		}
-		else {
-			if (last_created_child != nullptr && last_created_child->get_name() == parent_name) {
-				Base* new_child = new Base(last_created_child, child_name);
-				if (new_child->get_name() == child_name) {		//Проверка, что дочерний объект создан корректно и привязан к дереву
-					current_layer_parent = last_created_child;
-					last_created_child = new_child;
+			if (is_valid) {
+				switch(class_index) {
+					case 2:
+						new Node2(parent, child_name);
+						break;
+					case 3:
+						new Node3(parent, child_name);
+						break;
+					case 4:
+						new Node4(parent, child_name);
+						break;
+					case 5:
+						new Node5(parent, child_name);
+						break;
+					case 6:
+						new Node6(parent, child_name);
+						break;
 				}
 			}
 		}
-		cin >> parent_name >> child_name;
+		cin >> parent_name;
 	}
 
-	this->print_object_tree();
-	cout << endl;
+	cout << "Object tree\n";
+	print_object_tree();
 
-	int layer_number, obj_number;		//Номер, НЕ ИНДЕКС (индексация с 1)
-	string new_name;
-	cin >> layer_number;
-	if (layer_number == 0) {		//Если ползователь не хочет ничего переименовывать, тут же заканчиваем работу метода
-		return;
-	}
-	cin >> obj_number >> new_name;
-	while (layer_number != 0) {
-		if (layer_number == 1) {
-			this->change_name(new_name);
+	string name;
+	int readiness;
+	//Для окончания ввода ввести ctrl+Z
+	while (cin >> name >> readiness) {
+		Base* obj = search_tree(name);
+		if (obj != nullptr) {
+			obj->set_readiness(readiness);
 		}
-		else {
-			Base* parent = this;
-			while (layer_number > 2) {
-				parent = parent->get_subordinated_object(-1);
-				if (parent == nullptr) {
-					break;
-				}
-				layer_number--;
-			}
-			if (parent != nullptr) {		//Если в цикле while вернулся nullptr, значит у родителя не было дочерних объектов; заканчиваем и ждем новый инпут
-				Base* object_to_rename = parent->get_subordinated_object(obj_number);
-				if (object_to_rename != nullptr) {		//Если obj_number out of range, то вернется nullptr
-					object_to_rename->change_name(new_name);
-				}
-			}
-		}
-		cin >> layer_number;
-		if (layer_number == 0) {
-			break;
-		}
-		cin >> obj_number >> new_name;
 	}
 }
 
 int Application::exec_app()
 {
-	this->print_object_tree();
+	cout << "The tree of objects and their readiness\n";
+	print_tree_with_readiness();
 	return 0;
 }
