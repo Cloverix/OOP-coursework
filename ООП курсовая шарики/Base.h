@@ -24,6 +24,9 @@ public:
 	Base* get_subordinated_object(int object_index);
 	Base* search_on_this_branch(string object_name);
 	Base* search_tree(string object_name);
+	bool change_head_object(Base* new_head_object);
+	void delete_subordinate_object(string name);
+	Base* get_object(string path);
 	~Base();
 };
 

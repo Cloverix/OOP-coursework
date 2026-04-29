@@ -146,6 +146,153 @@ Base* Base::search_tree(string object_name)
 	return root_node->search_on_this_branch(object_name);
 }
 
+bool Base::change_head_object(Base* new_head_object)
+{
+	if (head_object == nullptr || new_head_object == nullptr) {
+		return false;
+	}
+	//Попытка переподчинения головного объекта к объекту на ветке
+	vector<Base*> objects_to_check;
+	objects_to_check.push_back(this);
+	while (objects_to_check.size() > 0) {
+		Base* current_checking = objects_to_check[objects_to_check.size() - 1];		//Проверяем всех детей этого объекта
+		objects_to_check.pop_back();												//Он больше не нужен в векторе, так как мы проверим его потомков к концу итерации
+		for (int i = 0; i < current_checking->get_subordinate_objects_size(); i++) {	//Проходимся по каждому ребенку current_checking
+			Base* child = current_checking->get_subordinated_object(i + 1);
+			if (child == new_head_object) {
+				return false;
+			}
+			objects_to_check.push_back(child);		//Если объект не забракован, его потомков тоже нужно проверить
+		}
+	}
+	/*
+	if (search_on_this_branch(new_head_object->name) != nullptr) {
+		return false;
+	}
+	*/
+	//У нового головного объекта уже есть подчиненный с таким же именем
+	for (int i = 0; i < new_head_object->get_subordinate_objects_size(); i++) {
+		if (new_head_object->get_subordinated_object(i + 1)->get_name() == name) {
+			return false;
+		}
+	}
+	int index = -1;
+	//Находим индекс данного объекта в массиве подчиненных объектов головного
+	for (int i = 0; i < head_object->get_subordinate_objects_size(); i++) {
+		if (head_object->get_subordinated_object(i + 1) == this) {
+			index = i;
+		}
+	}
+	if (index >= 0) {
+		head_object->subordinate_objects.erase(head_object->subordinate_objects.begin() + index);
+		this->head_object = new_head_object;
+		new_head_object->subordinate_objects.push_back(this);
+		return true;
+	}
+	//Переопределить головной объект не удалось
+	return false;
+}
+
+void Base::delete_subordinate_object(string name)
+{
+	int index = -1;
+	for (int i = 0; i < subordinate_objects.size(); i++) {
+		if (subordinate_objects[i]->name == name) {
+			index = i;
+			break;
+		}
+	}
+	if (index >= 0) {
+		//Составляем абсолютный путь к удаленному объекту
+		string absolute_path = name;
+		Base* cur_obj = this;
+		while (cur_obj->get_head_object() != nullptr) {
+			absolute_path = cur_obj->get_name() + "/" + absolute_path;
+			cur_obj = cur_obj->get_head_object();
+		}
+		absolute_path = "/" + absolute_path;
+
+		Base* obj_to_delete = subordinate_objects[index];
+		subordinate_objects.erase(subordinate_objects.begin() + index);
+		delete obj_to_delete;
+		cout << "The object " << absolute_path << " has been deleted\n";
+	}
+}
+
+Base* Base::get_object(string path)
+{
+	//пустой путь
+	if (path == "") {
+		return nullptr;
+	}
+	//от корня
+	if (path.length() >= 2 && path[0] == '/' && path[1] == '/') {
+		string name = "";
+		for (int i = 0; i < path.length(); i++) {
+			if (path[i] != '/') {
+				name += path[i];
+			}
+		}
+		return search_tree(name);
+	}
+	//корневой объект
+	if (path == "/") {
+		Base* root_node = this;
+		while (root_node->head_object != nullptr) {
+			root_node = root_node->head_object;
+		}
+		return root_node;
+	}
+	//текущий объект
+	if (path == ".") {
+		return this;
+	}
+	//по уникальности имени от текущего объекта
+	if (path.length() >= 1 && path[0] == '.') {
+		string name = "";
+		for (int i = 0; i < path.length(); i++) {
+			if (path[i] != '.') {
+				name += path[i];
+			}
+		}
+		return search_on_this_branch(name);
+	}
+	//абсолютный и относительный путь
+	else {
+		vector<string> names;
+		string cur_name = "";
+		int start_index = (path[0] == '/') ? 1 : 0;
+		for (int i = start_index; i < path.length(); i++) {
+			if (path[i] == '/') {
+				if (cur_name != "") {
+					names.push_back(cur_name);
+				}
+				cur_name = "";
+			}
+			else {
+				cur_name += path[i];
+			}
+		}
+		if (cur_name != "") {
+			names.push_back(cur_name);
+		}
+		Base* target_object = this;
+		//абсолютный путь: начинаем с корневого объекта
+		if (path.length() >= 1 && path[0] == '/') {
+			while (target_object->head_object != nullptr) {
+				target_object = target_object->head_object;
+			}
+		}
+		for (int i = 0; i < names.size(); i++) {
+			target_object = target_object->get_subordinated_object(names[i]);
+			if (target_object == nullptr) {
+				break;
+			}
+		}
+		return target_object;
+	}
+}
+
 Base::~Base()
 {
 	for (Base* ptr : subordinate_objects) {
