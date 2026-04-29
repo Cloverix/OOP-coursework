@@ -97,10 +97,6 @@ void Application::build_tree_objects()
 				// Корневой объект нельзя переподчинить
 				cout << path << "     Redefining the head object failed\n";
 			}
-			else if (selected_obj->search_on_this_branch(new_head->get_name()) != nullptr) {
-				// Новый головной принадлежит ветке текущего
-				cout << path << "     Redefining the head object failed\n";
-			}
 			else {
 				// Проверка дублирования имён у нового головного
 				bool dubbing = false;

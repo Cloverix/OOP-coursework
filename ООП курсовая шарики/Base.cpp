@@ -120,21 +120,22 @@ Base* Base::get_subordinated_object(int object_num)
 
 Base* Base::search_on_this_branch(string object_name)
 {
-	Base* found_object = nullptr;
-	if (name == object_name) {
-		found_object = this;
-	}
-	for (int i = 0; i < subordinate_objects.size(); i++) {
-		Base* child = subordinate_objects[i];
-		Base* subsearch_result = child->search_on_this_branch(object_name);
-		if (subsearch_result != nullptr) {
-			if (found_object != nullptr) {
-				return nullptr;
-			}
-			found_object = subsearch_result;
+	Base* found = nullptr;
+	int count = 0;
+	vector<Base*> stack;
+	stack.push_back(this);
+	while (!stack.empty()) {
+		Base* node = stack.back();
+		stack.pop_back();
+		if (node->get_name() == object_name) {
+			count++;
+			found = node;
+		}
+		for (int i = 0; i < node->get_subordinate_objects_size(); i++) {
+			stack.push_back(node->get_subordinated_object(i + 1));
 		}
 	}
-	return found_object;
+	return (count == 1) ? found : nullptr;
 }
 
 Base* Base::search_tree(string object_name)
@@ -283,11 +284,21 @@ Base* Base::get_object(string path)
 				target_object = target_object->head_object;
 			}
 		}
+		//проверка однозначности
 		for (int i = 0; i < names.size(); i++) {
-			target_object = target_object->get_subordinated_object(names[i]);
-			if (target_object == nullptr) {
-				break;
+			int count = 0;
+			Base* found = nullptr;
+			for (int j = 0; j < target_object->get_subordinate_objects_size(); j++) {
+				Base* child = target_object->get_subordinated_object(j + 1);
+				if (child->get_name() == names[i]) {
+					count++;
+					found = child;
+				}
 			}
+			if (count != 1) {
+				return nullptr;
+			}
+			target_object = found;
 		}
 		return target_object;
 	}
