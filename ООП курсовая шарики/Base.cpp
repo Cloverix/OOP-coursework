@@ -122,17 +122,17 @@ Base* Base::search_on_this_branch(string object_name)
 {
 	Base* found = nullptr;
 	int count = 0;
-	vector<Base*> stack;
+	vector<Base*> stack;		//Здесь хранятся все объекты, детей которых нужно проверить на совпадение имен
 	stack.push_back(this);
 	while (!stack.empty()) {
 		Base* node = stack.back();
-		stack.pop_back();
+		stack.pop_back();								//Убираем последний объект; его дети будут проверены к концу итерации
 		if (node->get_name() == object_name) {
 			count++;
 			found = node;
 		}
 		for (int i = 0; i < node->get_subordinate_objects_size(); i++) {
-			stack.push_back(node->get_subordinated_object(i + 1));
+			stack.push_back(node->get_subordinated_object(i + 1));			//Добавляем всех детей node в список на проверку
 		}
 	}
 	return (count == 1) ? found : nullptr;
