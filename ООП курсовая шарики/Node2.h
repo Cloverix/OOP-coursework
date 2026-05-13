@@ -4,6 +4,9 @@
 class Node2 : public Base
 {
 public:
+	void signal(string& message);
+	void handler(string message);
+
 	Node2(Base* parent, string name);
 };
 

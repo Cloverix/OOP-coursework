@@ -8,6 +8,17 @@
 #include "Node6.h"
 using namespace std;
 
+void Application::signal(string& message)
+{
+	cout << "Signal from " << get_absolute_path() << endl;
+	message += " (class: 1)";
+}
+
+void Application::handler(string message)
+{
+	cout << "Signal to " << get_absolute_path() << " Text:  " << message << endl;
+}
+
 Application::Application(Base* head_object, string name) : Base(head_object, name)
 {
 }
@@ -60,14 +71,34 @@ void Application::build_tree_objects()
 		cin >> path;
 	}
 
+	string connection_origin, connection_receiver;
+	cin >> connection_origin;
+	while (connection_origin != "end_of_connections") {
+		cin >> connection_receiver;
+		Base* origin = get_object(connection_origin);
+		Base* reciever = get_object(connection_receiver);
+		if (origin != nullptr && reciever != nullptr) {
+			origin->set_connection(SIGNAL_D(Base::signal), reciever, HANDLER_D(Base::handler));
+		}
+		cin >> connection_origin;
+	}
+
 	cout << "Object tree\n";
 	print_object_tree();
-	
-	string command;
+
+	string command, additional_info;
+	int object_state;
 	cin >> command;
 	Base* selected_obj = this;
 	while (command != "END") {
 		cin >> path;
+		cin.ignore();
+		if (command == "EMIT" || command == "SET_CONNECT" || command == "DELETE_CONNECT") {
+			getline(cin, additional_info);
+		}
+		if (command == "SET_CONDITION") {
+			cin >> object_state;
+		}
 		if (command == "SET") {
 			Base* found_obj = selected_obj->get_object(path);
 			if (found_obj != nullptr) {
@@ -87,7 +118,6 @@ void Application::build_tree_objects()
 				cout << path << "     Object is not found\n";
 			}
 		}
-
 		if (command == "MOVE") {
 			Base* new_head = selected_obj->get_object(path);
 			if (new_head == nullptr) {
@@ -125,13 +155,61 @@ void Application::build_tree_objects()
 			//В этом случае path - имя объекта, который надо удалить
 			selected_obj->delete_subordinate_object(path);
 		}
+		if (command == "EMIT") {
+			Base* signal_origin = get_object(path);
+			if (signal_origin == nullptr) {
+				cout << "Object " << path << " not found\n";
+			}
+			else {
+				signal_origin->emit_signal(SIGNAL_D(Base::signal), additional_info);
+			}
+		}
+		if (command == "SET_CONNECT") {
+			bool flag = true;
+			Base* origin_object = get_object(path);
+			if (origin_object == nullptr) {
+				flag = false;
+				cout << "Object " << path << " not found\n";
+			}
+			Base* target_object = get_object(additional_info);
+			if (target_object == nullptr) {
+				flag = false;
+				cout << "Handler object " << additional_info << " not found\n";
+			}
+			if (flag) {
+				origin_object->set_connection(SIGNAL_D(Base::signal), target_object, HANDLER_D(Base::handler));
+			}
+		}
+		if (command == "DELETE_CONNECT") {
+			bool flag = true;
+			Base* origin_object = get_object(path);
+			if (origin_object == nullptr) {
+				flag = false;
+				cout << "Object " << path << " not found\n";
+			}
+			Base* target_object = get_object(additional_info);
+			if (target_object == nullptr) {
+				flag = false;
+				cout << "Handler object " << additional_info << " not found\n";
+			}
+			if (flag) {
+				origin_object->delete_connection(SIGNAL_D(Base::signal), target_object, HANDLER_D(Base::handler));
+			}
+		}
+		if (command == "SET_CONDITION") {
+			Base* target_object = get_object(path);
+			if (target_object == nullptr) {
+				cout << "Object " << path << " not found\n";
+			}
+			else {
+				target_object->set_readiness(object_state);
+			}
+		}
 		cin >> command;
 	}
 }
 
 int Application::exec_app()
 {
-	cout << "Current object hierarchy tree\n";
-	print_object_tree();
 	return 0;
 }

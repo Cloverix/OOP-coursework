@@ -2,6 +2,14 @@
 #include <iostream>
 using namespace std;
 
+void Base::signal(string& message)
+{
+}
+
+void Base::handler(string message)
+{
+}
+
 Base::Base(Base* head_object, string name)
 {
 	this->head_object = head_object;
@@ -9,7 +17,7 @@ Base::Base(Base* head_object, string name)
 	if (head_object != nullptr) {
 		head_object->subordinate_objects.push_back(this);
 	}
-	this->readiness = 0;
+	this->readiness = 1;
 }
 
 bool Base::change_name(string name)
@@ -166,11 +174,6 @@ bool Base::change_head_object(Base* new_head_object)
 			objects_to_check.push_back(child);		//Если объект не забракован, его потомков тоже нужно проверить
 		}
 	}
-	/*
-	if (search_on_this_branch(new_head_object->name) != nullptr) {
-		return false;
-	}
-	*/
 	//У нового головного объекта уже есть подчиненный с таким же именем
 	for (int i = 0; i < new_head_object->get_subordinate_objects_size(); i++) {
 		if (new_head_object->get_subordinated_object(i + 1)->get_name() == name) {
@@ -302,6 +305,68 @@ Base* Base::get_object(string path)
 		}
 		return target_object;
 	}
+}
+
+void Base::set_connection(TYPE_SIGNAL signal_method, 
+	Base* target_obj, 
+	TYPE_HANDLER handler)
+{
+	for (int i = 0; i < connections.size(); i++) {
+		if (connections[i]->p_signal == signal_method &&
+			connections[i]->p_target_obj == target_obj &&
+			connections[i]->p_handler == handler) {
+			return;
+		}
+	}
+
+	connection* new_connection = new connection();
+	new_connection->p_signal = signal_method;
+	new_connection->p_target_obj = target_obj;
+	new_connection->p_handler = handler;
+	connections.push_back(new_connection);
+}
+
+void Base::delete_connection(TYPE_SIGNAL signal_method, Base* target_obj, TYPE_HANDLER handler)
+{
+	for (int i = 0; i < connections.size(); i++) {
+		if (connections[i]->p_signal == signal_method &&
+			connections[i]->p_target_obj == target_obj &&
+			connections[i]->p_handler == handler) {
+			delete connections[i];
+			connections.erase(connections.begin() + i);
+			break;
+		}
+	}
+}
+
+void Base::emit_signal(TYPE_SIGNAL signal_method, string message)
+{
+	if (readiness == 0) {
+		return;
+	}
+	(this->*signal_method)(message);
+	for (int i = 0; i < connections.size(); i++) {
+		if (connections[i]->p_signal == signal_method && connections[i]->p_target_obj->readiness != 0) {
+			Base* target = connections[i]->p_target_obj;
+			TYPE_HANDLER handler = connections[i]->p_handler;
+			(target->*handler)(message);
+		}
+	}
+}
+
+string Base::get_absolute_path()
+{
+	if (head_object == nullptr) {
+		return "/";
+	}
+	string absolute_path = name;
+	Base* cur_obj = head_object;
+	while (cur_obj->get_head_object() != nullptr) {
+		absolute_path = cur_obj->get_name() + "/" + absolute_path;
+		cur_obj = cur_obj->get_head_object();
+	}
+	absolute_path = "/" + absolute_path;
+	return absolute_path;
 }
 
 Base::~Base()
